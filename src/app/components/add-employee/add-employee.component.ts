@@ -1,74 +1,113 @@
-import { Component } from '@angular/core';
-import { FormArray, FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { MatCheckboxChange } from '@angular/material/checkbox';
+import { Router } from '@angular/router';
+import { HttpService } from 'src/app/service/http.service';
+import { Employee } from '../Model/employee';
 
 @Component({
   selector: 'app-add-employee',
   templateUrl: './add-employee.component.html',
   styleUrls: ['./add-employee.component.scss']
 })
-export class AddEmployeeComponent {
-  employeeForm!: FormGroup;
-
+export class AddEmployeeComponent implements OnInit{
+  public employee: Employee = new Employee();
+  employeeFormGroup!: FormGroup;
 
   departments: Array<any> = [
-    { id: 1, name: "HR", value: "HR", checked: false },
-    { id: 2, name: "Sales", value: "Sales", checked: false },
-    { id: 3, name: "Finance", value: "Finance", checked: false  },
-    { id: 4, name: "Engineer", value: "Engineer", checked: false },
-    { id: 5, name: "Other", value: "Other", checked: false }
+    {
+      id: 1,
+      name: "HR",
+      value: "HR",
+      checked: false
+    },
+    {
+      id: 2,
+      name: "Sales",
+      value: "Sales",
+      checked: false 
+    },
+    {
+      id: 3,
+      name: "Finance",
+      value: "Finance",
+      checked: false  
+    },
+    {
+      id: 4,
+      name: "Engineer",
+      value: "Engineer",
+      checked: false
+    },
+    {
+      id: 5,
+      name: "Other",
+      value: "Other",
+      checked: false 
+    }
   ]
 
+  constructor(private formBuilder: FormBuilder,
+    private httpService: HttpService,
+              private router: Router) { 
 
-  constructor(private formBuilder: FormBuilder) {
-    this.employeeForm = this.formBuilder.group({
-      name: new FormControl(''),
-      profilePic: new FormControl(''),
-      gender: new FormControl(''),
-      department: new FormArray([]),
-      salary: new FormControl(''),
-      startDate: new FormControl(''),
-      note: new FormControl('')
+    this.employeeFormGroup  = this.formBuilder.group({
+      name: new FormControl('', [Validators.required, Validators.pattern("^[A-Z][a-zA-Z\\s]{2,}$")]),
+      profilePic: new FormControl('', [Validators.required]),
+      gender: new FormControl('', []),
+      department: this.formBuilder.array([], []),
+      salary: new FormControl('', []),
+      startDate: new FormControl('', []),
+      note: new FormControl('', []) 
     })
-   }
-
+  }
 
   ngOnInit(): void {
+    console.log(this.employee);
   }
-  onDepartmentChange(event: any){
-    const departmentValue = event.source.value
-    const selectedDepartment = event.checked
-    const departmentArray: FormArray = this.employeeForm.get('department') as FormArray;
 
 
-    if (selectedDepartment) {
-      departmentArray.push(new FormControl(departmentValue));
+  
+   onCheckboxChange(event: MatCheckboxChange) {
+    const department: FormArray = this.employeeFormGroup.get('department') as FormArray;
+
+    if (event.checked) {
+      department.push(new FormControl(event.source.value));
+      console.log(department);
     } else {
-      const index = departmentArray.controls.findIndex(x => x.value === departmentValue);
-      departmentArray.removeAt(index);
+      const index = department.controls.findIndex(x => x.value === event.source.value);
+      department.removeAt(index);
     }
   }
 
-
-  /**
-   * To read Salary value from slider
-   */
-  salary: number = 400000;
-  updateSetting(event: any) {
-    this.salary = event.value;
-  }
-
-
-  formatLabel(value: number) {
-    if (value >= 1000) {
-      return Math.round(value / 1000) + 'k';
-    }
-    return value;
-  }
-
+  // onSubmit(){
+  //   this.employee = this.employeeFormGroup.value;
+  //   // console.log(this.employeeFormGroup);
+  //   console.log(this.employee);
+  //   addEmployee(this.employee).subscribe((response: any) => {
+  //   console.log(response);
+  //   this.router.navigateByUrl("/home-page");
+  //   });
+  // }
 
   submitForm(){
-    console.log(this.employeeForm.value)
+    this.employee = this.employeeFormGroup.value;
+    console.log(this.employeeFormGroup.value)
+    this.httpService.addEmployee(this.employee).subscribe(response => {
+      console.log(response);
+      this.router.navigateByUrl("/home-page");
+    });
+  }
+/**
+    * Salary slider
+    */
+formatLabel(value: number): string {
+  if (value >= 1000) {
+    return Math.round(value / 1000) + 'k';
   }
 
+  return `${value}`;
+}
+  
 
 }
